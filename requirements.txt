@@ -1,0 +1,1 @@
+airflow[celery, postgres, rabbitmq, crypto]==1.8.0
