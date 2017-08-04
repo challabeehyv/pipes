@@ -38,7 +38,7 @@ commit_table_template = """$CCHQ_HOME/python_env/bin/python manage.py commit_tab
 
 start_batch = BashOperator(
     task_id='clear_staging_records',
-    bash_command=create_batch_template,  # would actually be something like `./manage.py dump_intermediate_table <report_slug>`
+    bash_command=create_batch_template,
     dag=dag
 )
 
