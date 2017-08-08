@@ -3,11 +3,6 @@ from airflow.operators import BashOperator, PythonOperator
 from datetime import datetime, timedelta
 from uuid import uuid4
 
-REPORT_SLUGS = [
-    'app_status',
-    'forms_by_submission',
-]
-
 default_args = {
     'owner': 'cchq',
     'depends_on_past': True,
