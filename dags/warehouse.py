@@ -18,24 +18,15 @@ default_args = {
     # 'end_date': datetime(2016, 1, 1),
 }
 
-def get_batch_id(*args, **kwargs):
-    return uuid4().hex
-
 dag = DAG('update_warehouse', default_args=default_args, schedule_interval='@daily')
 
-generate_unique_id = PythonOperator(
-    task_id='generate_unique_id',
-    python_callable=get_batch_id,
-    dag=dag
-)
-
-create_batch_template = """{{ var.value.CCHQ_HOME }}/python_env/bin/python {{ var.value.CCHQ_HOME }}/manage.py create_batch {{ ti.xcom_pull("generate_unique_id") }} -s {{ ds }} -e {{ tomorrow_ds }}"""
-commit_table_template = """{{ var.value.CCHQ_HOME }}/python_env/bin/python {{ var.value.CCHQ_HOME }}/manage.py commit_table {{ params.table_slug }} {{ ti.xcom_pull("generate_unique_id") }}"""
+commit_table_template = """{{ var.value.CCHQ_HOME }}/python_env/bin/python {{ var.value.CCHQ_HOME }}/manage.py commit_table {{ params.table_slug }} {{ ti.xcom_pull("start_batch") }}"""
 
 start_batch = BashOperator(
     task_id='start_batch',
-    bash_command=create_batch_template,
-    dag=dag
+    bash_command="{{ var.value.CCHQ_HOME }}/python_env/bin/python {{ var.value.CCHQ_HOME }}/manage.py create_batch",
+    dag=dag,
+    xcom_push=True
 )
 
 
@@ -59,6 +50,5 @@ complete_batch = BashOperator(
     dag=dag
 )
 
-generate_unique_id >> start_batch
 start_batch >> update_app_staging >> update_app_dim
 update_app_dim >> complete_batch
