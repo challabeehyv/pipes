@@ -46,7 +46,7 @@ update_app_dim = BashOperator(
 
 complete_batch = BashOperator(
     task_id='complete_batch',
-    bash_command="{{ var.value.CCHQ_HOME }}/python_env/bin/python {{ var.value.CCHQ_HOME }}/manage.py mark_batch_complete {{ ti.xcom_pull('generate_unique_id') }}",
+    bash_command="{{ var.value.CCHQ_HOME }}/python_env/bin/python {{ var.value.CCHQ_HOME }}/manage.py mark_batch_complete {{ ti.xcom_pull('start_batch') }}",
     dag=dag
 )
 
