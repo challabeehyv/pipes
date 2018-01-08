@@ -6,7 +6,7 @@ from uuid import uuid4
 default_args = {
     'owner': 'cchq',
     'depends_on_past': True,
-    'start_date': datetime(2016, 05, 16),
+    'start_date': datetime(2016, 5, 16),
     'email': ['devops@dimagi.com'],
     'email_on_failure': False,
     'email_on_retry': False,
@@ -21,7 +21,7 @@ default_args = {
 def get_batch_id(*args, **kwargs):
     return uuid4().hex
 
-dag = DAG('update_fact', default_args=default_args, schedule_interval='@daily')
+dag = DAG('update_warehouse', default_args=default_args, schedule_interval='@daily')
 
 generate_unique_id = PythonOperator(
     task_id='generate_unique_id',
@@ -40,14 +40,14 @@ start_batch = BashOperator(
 
 
 update_app_staging = BashOperator(
-    task_id='update_dims',
+    task_id='update_app_staging',
     bash_command=commit_table_template,
     params={'table_slug': 'application_staging'},
     dag=dag
 )
 
 update_app_dim = BashOperator(
-    task_id='update_fact_table',
+    task_id='load_app_dim',
     bash_command=commit_table_template,
     params={'table_slug': 'application_dim'},
     dag=dag
