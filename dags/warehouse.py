@@ -1,11 +1,11 @@
 from airflow import DAG
-from airflow.operators import BashOperator, PythonOperator
+from airflow.operators import BashOperator
 from datetime import datetime, timedelta
 from uuid import uuid4
 
 default_args = {
     'owner': 'cchq',
-    'depends_on_past': True,
+    'depends_on_past': False,
     'start_date': datetime(2016, 5, 16),
     'email': ['devops@dimagi.com'],
     'email_on_failure': False,
@@ -18,13 +18,13 @@ default_args = {
     # 'end_date': datetime(2016, 1, 1),
 }
 
-dag = DAG('update_warehouse', default_args=default_args, schedule_interval='@daily')
+dag = DAG('update_app_status', default_args=default_args, schedule_interval='@daily')
 
 commit_table_template = """{{ var.value.CCHQ_HOME }}/python_env/bin/python {{ var.value.CCHQ_HOME }}/manage.py commit_table {{ params.table_slug }} {{ ti.xcom_pull("start_batch") }}"""
 
 start_batch = BashOperator(
     task_id='start_batch',
-    bash_command="{{ var.value.CCHQ_HOME }}/python_env/bin/python {{ var.value.CCHQ_HOME }}/manage.py create_batch",
+    bash_command="{{ var.value.CCHQ_HOME }}/python_env/bin/python {{ var.value.CCHQ_HOME }}/manage.py create_batch app_status",
     dag=dag,
     xcom_push=True
 )
