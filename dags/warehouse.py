@@ -29,3 +29,27 @@ update_app_dim = SubDagOperator(
     task_id='update_app_dim',
     dag=dag
 )
+
+update_user_dim = SubDagOperator(
+    subdag=dim_subdag(DAG_ID, 'user', dag.start_date, dag.schedule_interval),
+    task_id='update_user_dim',
+    dag=dag
+)
+
+update_location_dim = SubDagOperator(
+    subdag=dim_subdag(DAG_ID, 'location', dag.start_date, dag.schedule_interval),
+    task_id='update_location_dim',
+    dag=dag
+)
+
+update_group_dim = SubDagOperator(
+    subdag=dim_subdag(DAG_ID, 'group', dag.start_date, dag.schedule_interval),
+    task_id='update_group_dim',
+    dag=dag
+)
+
+update_domain_dim = SubDagOperator(
+    subdag=dim_subdag(DAG_ID, 'domain', dag.start_date, dag.schedule_interval),
+    task_id='update_domain_dim',
+    dag=dag
+)
