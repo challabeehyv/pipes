@@ -1,7 +1,9 @@
+from datetime import datetime, timedelta
+
 from airflow import DAG
 from airflow.operators import BashOperator
-from datetime import datetime, timedelta
-from uuid import uuid4
+from airflow.operators.subdag_operator import SubDagOperator
+from dags.dim import dim_subdag
 
 default_args = {
     'owner': 'cchq',
@@ -18,37 +20,12 @@ default_args = {
     # 'end_date': datetime(2016, 1, 1),
 }
 
-dag = DAG('update_app_status', default_args=default_args, schedule_interval='@daily')
+DAG_ID = 'update_warehouse'
 
-commit_table_template = """{{ var.value.CCHQ_HOME }}/python_env/bin/python {{ var.value.CCHQ_HOME }}/manage.py commit_table {{ params.table_slug }} {{ ti.xcom_pull("start_batch") }}"""
+dag = DAG(DAG_ID, default_args=default_args, schedule_interval='@daily')
 
-start_batch = BashOperator(
-    task_id='start_batch',
-    bash_command="{{ var.value.CCHQ_HOME }}/python_env/bin/python {{ var.value.CCHQ_HOME }}/manage.py create_batch app_status",
-    dag=dag,
-    xcom_push=True
-)
-
-
-update_app_staging = BashOperator(
-    task_id='update_app_staging',
-    bash_command=commit_table_template,
-    params={'table_slug': 'application_staging'},
+update_app_dim = SubDagOperator(
+    subdag=dim_subdag(DAG_ID, 'app', dag.start_date, dag.schedule_interval),
+    task_id='update_app_dim',
     dag=dag
 )
-
-update_app_dim = BashOperator(
-    task_id='load_app_dim',
-    bash_command=commit_table_template,
-    params={'table_slug': 'application_dim'},
-    dag=dag
-)
-
-complete_batch = BashOperator(
-    task_id='complete_batch',
-    bash_command="{{ var.value.CCHQ_HOME }}/python_env/bin/python {{ var.value.CCHQ_HOME }}/manage.py mark_batch_complete {{ ti.xcom_pull('start_batch') }}",
-    dag=dag
-)
-
-start_batch >> update_app_staging >> update_app_dim
-update_app_dim >> complete_batch
