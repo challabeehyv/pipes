@@ -10,7 +10,7 @@ def linear_subdag(parent_dag, child_dag, default_args, schedule_interval, final_
     final_slug = '{}_{}'.format(child_dag, final_type)
     staging_slug = '{}_staging'.format(child_dag)
     start_id = 'start_{}_batch'.format(child_dag)
-    
+
     dag = DAG(
         '{}.{}'.format(parent_dag, child_dag),
         default_args=default_args,
@@ -19,7 +19,7 @@ def linear_subdag(parent_dag, child_dag, default_args, schedule_interval, final_
 
     start_batch = BashOperator(
         task_id=start_id,
-        bash_command="{{ var.value.CCHQ_HOME }}/python_env/bin/python {{ var.value.CCHQ_HOME }}/manage.py create_batch {{ params.table_slug }}",
+        bash_command="{{ var.value.CCHQ_HOME }}/python_env/bin/python {{ var.value.CCHQ_HOME }}/manage.py create_batch {{ params.table_slug }} {{ tomorrow_ds }}",
         params={'table_slug': final_slug},
         dag=dag,
         xcom_push=True
@@ -60,12 +60,11 @@ def fact_subdag(parent_dag, child_dag, default_args, schedule_interval):
     return linear_subdag(parent_dag, child_dag, default_args, schedule_interval, 'fact')
 
 
-def join_subdag(parent_dag, child_dag, default_args, schedule_interval, staging_dependencies):
+def multi_subdag(parent_dag, child_dag, default_args, schedule_interval, dim_dependencies):
 
     start_id = 'start_{}_batch'.format(child_dag)
     dim_slug = '{}_dim'.format(child_dag)
-    staging_slug = '{}_staging'.format(child_dag)
-    
+
     dag = DAG(
         '{}.{}'.format(parent_dag, child_dag),
         default_args=default_args,
@@ -74,24 +73,35 @@ def join_subdag(parent_dag, child_dag, default_args, schedule_interval, staging_
 
     start_batch = BashOperator(
         task_id=start_id,
-        bash_command="{{ var.value.CCHQ_HOME }}/python_env/bin/python {{ var.value.CCHQ_HOME }}/manage.py create_batch {{ params.dim_slug }}",
+        bash_command="{{ var.value.CCHQ_HOME }}/python_env/bin/python {{ var.value.CCHQ_HOME }}/manage.py create_batch {{ params.dim_slug }} {{ tomorrow_ds }}",
         params={'dim_slug': dim_slug},
         dag=dag,
         xcom_push=True
     )
 
-    tasks = []
-    for table in staging_dependencies:
-        update = BashOperator(
-            task_id='update_{}_staging'.format(table),
+    dims = []
+    for dim in dim_dependencies:
+        dep_dim_slug = '{}_dim'.format(dim)
+        dep_staging_slug = '{}_staging'.format(dim)
+
+        update_staging = BashOperator(
+            task_id='update_{}_staging'.format(dim),
             bash_command=commit_table_template,
-            params={'table_slug': staging_slug, 'start_id': start_id},
+            params={'table_slug': dep_staging_slug, 'start_id': start_id},
             dag=dag
         )
-        tasks.append(update)
-        update.set_upstream(start_batch)
+        update_staging.set_upstream(start_batch)
 
-    update_dim = BashOperator(
+        update_dim = BashOperator(
+            task_id='load_{}_dim'.format(dim),
+            bash_command=commit_table_template,
+            params={'table_slug': dep_dim_slug, 'start_id': start_id},
+            dag=dag
+        )
+        dims.append(update_dim)
+        update_dim.set_upstream(update_staging)
+
+    update_multi_dim = BashOperator(
         task_id='load_{}_dim'.format(child_dag),
         bash_command=commit_table_template,
         params={'table_slug': dim_slug, 'start_id': start_id},
@@ -104,10 +114,10 @@ def join_subdag(parent_dag, child_dag, default_args, schedule_interval, staging_
         params={'start_id': start_id},
         dag=dag
     )
-    
-    for task in tasks:
-        update_dim.set_upstream(task)
 
-    update_dim >> complete_batch
+    for dim in dims:
+        update_multi_dim.set_upstream(dim)
+
+    update_multi_dim >> complete_batch
 
     return dag
