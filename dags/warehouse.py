@@ -22,7 +22,7 @@ default_args = {
 
 DAG_ID = 'update_warehouse'
 
-dag = DAG(DAG_ID, catchup=False, default_args=default_args, schedule_interval='@daily')
+dag = DAG(DAG_ID, default_args=default_args, schedule_interval='@daily')
 
 update_app_dim = SubDagOperator(
     subdag=dim_subdag(DAG_ID, 'application', dag.default_args, dag.schedule_interval),
