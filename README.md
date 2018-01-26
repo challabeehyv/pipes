@@ -38,6 +38,22 @@ set airflow environment variables
 airflow variables --set CCHQ_HOME /path/to/cchq
 ```
 
+# How to run
+
+The airflow scheduler is what actually runs the tasks created in your dags. You must start it for anything to execute.
+
+```
+airflow scheduler
+```
+
+There is a nice web ui to monitor the status of these tasks and pause or unpause execution. Note: new dags are paused by default so they must be turned on manually the first time.
+
+```
+airflow webserver -d
+```
+
+The `-d` flag runs it in debug mode. It is not clear why, but that is the only way it will run for me.
+
 # How to reset
 
 If your local copy gets messed up and you would like to start from a clean slate (somewhat likely during the development process), you can use the following command
