@@ -22,7 +22,7 @@ default_args = {
 
 DAG_ID = 'update_warehouse'
 
-dag = DAG(DAG_ID, catchup=False, default_args=default_args, schedule_interval='@daily')
+dag = DAG(DAG_ID, default_args=default_args, schedule_interval='@daily')
 
 update_app_dim = SubDagOperator(
     subdag=dim_subdag(DAG_ID, 'application', dag.default_args, dag.schedule_interval),
@@ -42,11 +42,11 @@ update_form_fact = SubDagOperator(
     dag=dag
 )
 
-update_user_group_dim = SubDagOperator(
-    subdag=multi_subdag(DAG_ID, 'user_group', dag.default_args, dag.schedule_interval, ['group', 'user']),
-    task_id='user_group',
+update_user_dims = SubDagOperator(
+    subdag=multi_subdag(DAG_ID, 'user', dag.default_args, dag.schedule_interval, ['group', 'user'], ['user_group']),
+    task_id='user',
     dag=dag
 )
 
-update_user_group_dim >> update_form_fact
+update_user_dims >> update_form_fact
 update_domain_dim >> update_form_fact
