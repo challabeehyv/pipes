@@ -42,11 +42,11 @@ update_form_fact = SubDagOperator(
     dag=dag
 )
 
-update_user_group_dim = SubDagOperator(
-    subdag=multi_subdag(DAG_ID, 'user_group', dag.default_args, dag.schedule_interval, ['group', 'user']),
-    task_id='user_group',
+update_user_dims = SubDagOperator(
+    subdag=multi_subdag(DAG_ID, 'user', dag.default_args, dag.schedule_interval, ['group', 'user'], ['user_group']),
+    task_id='user',
     dag=dag
 )
 
-update_user_group_dim >> update_form_fact
+update_user_dims >> update_form_fact
 update_domain_dim >> update_form_fact
