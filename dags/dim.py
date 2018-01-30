@@ -19,7 +19,7 @@ def linear_subdag(parent_dag, child_dag, default_args, schedule_interval, final_
 
     start_batch = BashOperator(
         task_id=start_id,
-        bash_command="{{ var.value.CCHQ_HOME }}/python_env/bin/python {{ var.value.CCHQ_HOME }}/manage.py create_batch {{ params.table_slug }} {{ tomorrow_ds }}",
+        bash_command="{{ var.value.CCHQ_HOME }}/python_env/bin/python {{ var.value.CCHQ_HOME }}/manage.py create_batch {{ params.table_slug }} '{{ next_execution_date.strftime('%Y-%m-%d %H:%M:%S') }}'",
         params={'table_slug': final_slug},
         dag=dag,
         xcom_push=True
@@ -73,7 +73,7 @@ def multi_subdag(parent_dag, child_dag, default_args, schedule_interval, dim_dep
 
     start_batch = BashOperator(
         task_id=start_id,
-        bash_command="{{ var.value.CCHQ_HOME }}/python_env/bin/python {{ var.value.CCHQ_HOME }}/manage.py create_batch {{ params.batch_slug }} {{ tomorrow_ds }}",
+        bash_command="{{ var.value.CCHQ_HOME }}/python_env/bin/python {{ var.value.CCHQ_HOME }}/manage.py create_batch {{ params.batch_slug }} '{{ next_execution_date.strftime('%Y-%m-%d %H:%M:%S') }}'",
         params={'batch_slug': batch_slug},
         dag=dag,
         xcom_push=True
