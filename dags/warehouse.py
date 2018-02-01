@@ -30,12 +30,6 @@ update_app_dim = SubDagOperator(
     dag=dag
 )
 
-update_domain_dim = SubDagOperator(
-    subdag=dim_subdag(DAG_ID, 'domain', dag.default_args, dag.schedule_interval),
-    task_id='domain',
-    dag=dag
-)
-
 update_form_fact = SubDagOperator(
     subdag=fact_subdag(DAG_ID, 'form', dag.default_args, dag.schedule_interval),
     task_id='form',
@@ -49,14 +43,10 @@ update_synclog_fact = SubDagOperator(
 )
 
 update_user_dims = SubDagOperator(
-    subdag=multi_subdag(DAG_ID, 'user', dag.default_args, dag.schedule_interval, ['group', 'user'], ['user_group']),
+    subdag=multi_subdag(DAG_ID, 'user', dag.default_args, dag.schedule_interval, ['group', 'user', 'location', 'domain'], ['user_group', 'user_location', 'domain_membership']),
     task_id='user',
     dag=dag
 )
 
 update_user_dims >> update_form_fact
-update_domain_dim >> update_form_fact
-
-
 update_user_dims >> update_synclog_fact
-update_domain_dim >> update_synclog_fact
