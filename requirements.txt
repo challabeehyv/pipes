@@ -1,1 +1,2 @@
-airflow[celery, postgres, rabbitmq, crypto]==1.8.0
+apache-airflow[celery, postgres, rabbitmq, crypto]==1.8.1
+gunicorn==19.4
