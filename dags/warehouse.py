@@ -42,6 +42,12 @@ update_form_fact = SubDagOperator(
     dag=dag
 )
 
+update_synclog_fact = SubDagOperator(
+    subdag=fact_subdag(DAG_ID, 'synclog', dag.default_args, dag.schedule_interval),
+    task_id='synclog',
+    dag=dag
+)
+
 update_user_dims = SubDagOperator(
     subdag=multi_subdag(DAG_ID, 'user', dag.default_args, dag.schedule_interval, ['group', 'user'], ['user_group']),
     task_id='user',
@@ -50,3 +56,7 @@ update_user_dims = SubDagOperator(
 
 update_user_dims >> update_form_fact
 update_domain_dim >> update_form_fact
+
+
+update_user_dims >> update_synclog_fact
+update_domain_dim >> update_synclog_fact
