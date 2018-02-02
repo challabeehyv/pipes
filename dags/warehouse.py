@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.bash_operator import BashOperator
 from airflow.operators.subdag_operator import SubDagOperator
+from airflow.operators.latest_only_operator import LatestOnlyOperator
 from dim import dim_subdag, multi_subdag, fact_subdag
 
 default_args = {
@@ -24,29 +25,27 @@ DAG_ID = 'update_warehouse'
 
 dag = DAG(DAG_ID, default_args=default_args, schedule_interval='@daily')
 
+latest_only = LatestOnlyOperator(task_id='latest_only', dag=dag)
+
 update_app_dim = SubDagOperator(
     subdag=dim_subdag(DAG_ID, 'application', dag.default_args, dag.schedule_interval),
     task_id='application',
     dag=dag
 )
 
-update_form_fact = SubDagOperator(
-    subdag=fact_subdag(DAG_ID, 'form', dag.default_args, dag.schedule_interval),
-    task_id='form',
-    dag=dag
-)
-
-update_synclog_fact = SubDagOperator(
-    subdag=fact_subdag(DAG_ID, 'synclog', dag.default_args, dag.schedule_interval),
-    task_id='synclog',
-    dag=dag
-)
-
 update_user_dims = SubDagOperator(
-    subdag=multi_subdag(DAG_ID, 'user', dag.default_args, dag.schedule_interval, ['group', 'user', 'location', 'domain'], ['user_group', 'user_location', 'domain_membership']),
+    subdag=multi_subdag(DAG_ID, 'user', dag.default_args, dag.schedule_interval, ['group', 'user', 'location', 'domain'], ['user_group', 'user_location', 'domain_membership'], 'dim'),
     task_id='user',
     dag=dag
 )
 
-update_user_dims >> update_form_fact
-update_user_dims >> update_synclog_fact
+update_app_status = SubDagOperator(
+    subdag=multi_subdag(DAG_ID, 'app_status', dag.default_args, dag.schedule_interval, ['form', 'synclog'], ['app_status'], 'fact'),
+    task_id='app_status',
+    dag=dag
+)
+
+latest_only >> update_app_dim
+latest_only >> update_user_dims
+
+update_user_dims >> update_app_status
