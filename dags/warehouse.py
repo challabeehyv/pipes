@@ -8,7 +8,7 @@ from dim import dim_subdag, multi_subdag, fact_subdag
 
 default_args = {
     'owner': 'cchq',
-    'depends_on_past': True,
+    'depends_on_past': False,
     'start_date': datetime(2018, 1, 14),
     'email': ['devops@dimagi.com'],
     'email_on_failure': False,
@@ -25,7 +25,7 @@ DAG_ID = 'update_warehouse'
 
 dag = DAG(DAG_ID, default_args=default_args, schedule_interval='@daily')
 
-latest_only = LatestOnlyOperator(task_id='latest_only', dag=dag)
+latest_only = LatestOnlyOperator(task_id='latest_only', dag=dag, depends_on_past=True)
 
 update_app_dim = SubDagOperator(
     subdag=dim_subdag(DAG_ID, 'application', dag.default_args, dag.schedule_interval),
@@ -47,5 +47,6 @@ update_app_status = SubDagOperator(
 
 latest_only >> update_app_dim
 latest_only >> update_user_dims
+latest_only >> update_app_status
 
 update_user_dims >> update_app_status
