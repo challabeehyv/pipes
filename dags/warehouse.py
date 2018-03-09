@@ -50,3 +50,4 @@ latest_only >> update_user_dims
 latest_only >> update_app_status
 
 update_user_dims >> update_app_status
+update_app_dim >> update_app_status
