@@ -40,7 +40,7 @@ update_user_dims = SubDagOperator(
 )
 
 update_app_status = SubDagOperator(
-    subdag=multi_subdag(DAG_ID, 'app_status', dag.default_args, dag.schedule_interval, ['form', 'synclog'], ['app_status'], 'fact'),
+    subdag=multi_subdag(DAG_ID, 'app_status', dag.default_args, dag.schedule_interval, ['form', 'synclog'], ['app_status'], 'fact', extra_staging=['app_status_form', 'app_status_synclog']),
     task_id='app_status',
     dag=dag
 )
