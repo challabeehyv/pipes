@@ -60,7 +60,7 @@ def fact_subdag(parent_dag, child_dag, default_args, schedule_interval):
     return linear_subdag(parent_dag, child_dag, default_args, schedule_interval, 'fact')
 
 
-def multi_subdag(parent_dag, child_dag, default_args, schedule_interval, dim_dependencies, final_dims):
+def multi_subdag(parent_dag, child_dag, default_args, schedule_interval, dim_dependencies, final_dims, final_type, extra_staging=None):
 
     start_id = 'start_{}_batch'.format(child_dag)
     batch_slug = '{}_batch'.format(child_dag)
@@ -81,7 +81,7 @@ def multi_subdag(parent_dag, child_dag, default_args, schedule_interval, dim_dep
 
     dims = []
     for dim in dim_dependencies:
-        dep_dim_slug = '{}_dim'.format(dim)
+        dep_dim_slug = '{}_{}'.format(dim, final_type)
         dep_staging_slug = '{}_staging'.format(dim)
 
         update_staging = BashOperator(
@@ -93,7 +93,7 @@ def multi_subdag(parent_dag, child_dag, default_args, schedule_interval, dim_dep
         update_staging.set_upstream(start_batch)
 
         update_dim = BashOperator(
-            task_id='load_{}_dim'.format(dim),
+            task_id='load_{}_{}'.format(dim, final_type),
             bash_command=commit_table_template,
             params={'table_slug': dep_dim_slug, 'start_id': start_id},
             dag=dag
@@ -101,16 +101,32 @@ def multi_subdag(parent_dag, child_dag, default_args, schedule_interval, dim_dep
         dims.append(update_dim)
         update_dim.set_upstream(update_staging)
 
+    staging = []
+    if extra_staging is not None:
+        for staging_table in extra_staging:
+            staging_slug = '{}_staging'.format(staging_table)
+            update_staging = BashOperator(
+                task_id='update_{}_staging'.format(staging_table),
+                bash_command=commit_table_template,
+                params={'table_slug': staging_slug, 'start_id': start_id},
+                dag=dag
+            )
+            staging.append(update_staging)
+            for dim in dims:
+                update_staging.set_upstream(dim)
+
     multi_dims = []
     for dim in final_dims:
-        dim_slug = '{}_dim'.format(dim)
+        dim_slug = '{}_{}'.format(dim, final_type)
         update_multi_dim = BashOperator(
-            task_id='load_{}_dim'.format(dim),
+            task_id='load_{}_{}'.format(dim, final_type),
             bash_command=commit_table_template,
             params={'table_slug': dim_slug, 'start_id': start_id},
             dag=dag
         )
         multi_dims.append(update_multi_dim)
+        for table in staging:
+            update_multi_dim.set_upstream(table)
         for dim in dims:
             update_multi_dim.set_upstream(dim)
 
