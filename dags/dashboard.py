@@ -10,7 +10,7 @@ from dashboard_subdags import parallel_subdag, monthly_subdag, run_query_templat
 default_args = {
     'owner': 'cchq',
     'depends_on_past': False,
-    'start_date': datetime(2019, 7, 01),
+    'start_date': datetime(2019, 9, 1),
     'email': ['{}@{}'.format(name, 'dimagi.com') for name in ('dashboard-aggregation-script',)],
     'email_on_failure': True,
     'email_on_retry': True,
