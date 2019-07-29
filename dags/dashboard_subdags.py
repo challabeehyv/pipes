@@ -3,7 +3,7 @@ from airflow.operators import BashOperator
 from airflow.operators.subdag_operator import SubDagOperator
 
 
-run_query_template = """{{ var.value.CCHQ_HOME }}/python_env/bin/python {{ var.value.CCHQ_HOME }}/manage.py run_aggregation_query {{ params.query }} {{ ds }} {{ params.interval }}"""
+run_query_template = """cd {{ var.value.CCHQ_HOME }}; {{ var.value.CCHQ_HOME }}/python_env/bin/python {{ var.value.CCHQ_HOME }}/manage.py run_aggregation_query {{ params.query }} {{ ds }} {{ params.interval }}"""
 
 
 def parallel_subdag(parent_dag, child_dag, default_args, schedule_interval, tasks, interval):
@@ -18,7 +18,7 @@ def parallel_subdag(parent_dag, child_dag, default_args, schedule_interval, task
         run_task = BashOperator(
             task_id=task_slug,
             bash_command=run_query_template,
-            params={'query': task_slug},
+            params={'query': task_slug, 'interval': interval},
             dag=parallel_dag
         )
 
