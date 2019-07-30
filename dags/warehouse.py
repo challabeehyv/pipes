@@ -21,26 +21,26 @@ default_args = {
     # 'end_date': datetime(2016, 1, 1),
 }
 
-DAG_ID = 'update_warehouse'
+WAREHOUSE_DAG_ID = 'update_warehouse'
 
-dag = DAG(DAG_ID, default_args=default_args, schedule_interval='@daily')
+dag = DAG(WAREHOUSE_DAG_ID, default_args=default_args, schedule_interval='@daily')
 
 latest_only = LatestOnlyOperator(task_id='latest_only', dag=dag, depends_on_past=True)
 
 update_app_dim = SubDagOperator(
-    subdag=dim_subdag(DAG_ID, 'application', dag.default_args, dag.schedule_interval),
+    subdag=dim_subdag(WAREHOUSE_DAG_ID, 'application', dag.default_args, dag.schedule_interval),
     task_id='application',
     dag=dag
 )
 
 update_user_dims = SubDagOperator(
-    subdag=multi_subdag(DAG_ID, 'user', dag.default_args, dag.schedule_interval, ['group', 'user', 'location', 'domain'], ['user_group', 'user_location', 'domain_membership'], 'dim'),
+    subdag=multi_subdag(WAREHOUSE_DAG_ID, 'user', dag.default_args, dag.schedule_interval, ['group', 'user', 'location', 'domain'], ['user_group', 'user_location', 'domain_membership'], 'dim'),
     task_id='user',
     dag=dag
 )
 
 update_app_status = SubDagOperator(
-    subdag=multi_subdag(DAG_ID, 'app_status', dag.default_args, dag.schedule_interval, ['form', 'synclog'], ['app_status'], 'fact', extra_staging=['app_status_form', 'app_status_synclog']),
+    subdag=multi_subdag(WAREHOUSE_DAG_ID, 'app_status', dag.default_args, dag.schedule_interval, ['form', 'synclog'], ['app_status'], 'fact', extra_staging=['app_status_form', 'app_status_synclog']),
     task_id='app_status',
     dag=dag
 )
