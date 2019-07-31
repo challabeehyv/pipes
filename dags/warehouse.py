@@ -6,11 +6,14 @@ from airflow.operators.subdag_operator import SubDagOperator
 from airflow.operators.latest_only_operator import LatestOnlyOperator
 from dim import dim_subdag, multi_subdag, fact_subdag
 
+
+EMAIL_LIST = ['{}@{}'.format(name, 'dimagi.com') for name in ('cellowitz', 'dashboard-aggregation-script')]
+
 default_args = {
     'owner': 'cchq',
     'depends_on_past': False,
     'start_date': datetime(2018, 1, 14),
-    'email': ['{}@{}'.format(name, 'dimagi.com') for name in ('cellowitz', 'mharrison')],
+    'email': EMAIL_LIST,
     'email_on_failure': True,
     'email_on_retry': False,
     'retries': 1,
