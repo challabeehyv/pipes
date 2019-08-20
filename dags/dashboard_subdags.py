@@ -1,12 +1,14 @@
+import uuid
+
 from airflow import DAG
 from airflow.operators import BashOperator
 from airflow.operators.subdag_operator import SubDagOperator
 
 
-run_query_template = """cd {{ var.value.CCHQ_HOME }}; {{ var.value.CCHQ_HOME }}/python_env/bin/python {{ var.value.CCHQ_HOME }}/manage.py run_aggregation_query {{ params.query }} {{ ds }} {{ params.interval }}"""
+run_query_template = """cd {{ var.value.CCHQ_HOME }}; {{ var.value.CCHQ_HOME }}/python_env/bin/python {{ var.value.CCHQ_HOME }}/manage.py run_aggregation_query {{ params.query }} {{ params.agg_uuid }}"""
 
 
-def parallel_subdag(parent_dag, child_dag, default_args, schedule_interval, tasks, interval):
+def parallel_subdag(parent_dag, child_dag, default_args, schedule_interval, tasks, agg_uuid):
 
     parallel_dag = DAG(
         '{}.{}'.format(parent_dag, child_dag),
@@ -18,13 +20,16 @@ def parallel_subdag(parent_dag, child_dag, default_args, schedule_interval, task
         run_task = BashOperator(
             task_id=task_slug,
             bash_command=run_query_template,
-            params={'query': task_slug, 'interval': interval},
+            params={'query': task_slug, 'agg_uuid': agg_uuid},
             dag=parallel_dag
         )
 
     return parallel_dag
 
-def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, interval):
+
+def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, agg_date, interval):
+
+    agg_uuid = uuid.uuid4().hex
 
     MONTHLY_DAG_ID = '{}.{}'.format(parent_dag, child_dag)
     monthly_dag = DAG(
@@ -33,17 +38,24 @@ def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, inter
         schedule_interval=schedule_interval
     )
 
+    create_aggregation_record = BashOperator(
+        task_id='create_aggregation_record',
+        bash_command="""cd {{ var.value.CCHQ_HOME }}; {{ var.value.CCHQ_HOME }}/python_env/bin/python {{ var.value.CCHQ_HOME }}/manage.py create_aggregation_record {{ params.query }} {{ params.agg_uuid }} {{ ds }} {{ params.interval }}""",
+        params={'agg_uuid': agg_uuid, 'interval': interval},
+        dag=monthly_dag
+    )
+
     daily_attendance = BashOperator(
         task_id='daily_attendance',
         bash_command=run_query_template,
-        params={'query': 'daily_attendance', 'interval': interval},
+        params={'query': 'daily_attendance', 'agg_uuid': agg_uuid},
         dag=monthly_dag
     )
 
     update_months_table = BashOperator(
         task_id='update_months_table',
         bash_command=run_query_template,
-        params={'query': 'update_months_table', 'interval': interval},
+        params={'query': 'update_months_table', 'agg_uuid': agg_uuid},
         dag=monthly_dag
     )
 
@@ -68,7 +80,7 @@ def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, inter
             monthly_dag.default_args,
             monthly_dag.schedule_interval,
             stage_1_slugs,
-            interval
+            agg_uuid
         ),
         task_id='stage_1_tasks',
         dag=monthly_dag
@@ -77,35 +89,35 @@ def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, inter
     child_health_monthly = BashOperator(
         task_id='child_health_monthly',
         bash_command=run_query_template,
-        params={'query': 'child_health_monthly', 'interval': interval},
+        params={'query': 'child_health_monthly', 'agg_uuid': agg_uuid},
         dag=monthly_dag
     )
 
     agg_child_health = BashOperator(
         task_id='agg_child_health',
         bash_command=run_query_template,
-        params={'query': 'agg_child_health', 'interval': interval},
+        params={'query': 'agg_child_health', 'agg_uuid': agg_uuid},
         dag=monthly_dag
     )
 
     ccs_record_monthly = BashOperator(
         task_id='ccs_record_monthly',
         bash_command=run_query_template,
-        params={'query': 'ccs_record_monthly', 'interval': interval},
+        params={'query': 'ccs_record_monthly', 'agg_uuid': agg_uuid},
         dag=monthly_dag
     )
 
     agg_ccs_record = BashOperator(
         task_id='agg_ccs_record',
         bash_command=run_query_template,
-        params={'query': 'agg_ccs_record', 'interval': interval},
+        params={'query': 'agg_ccs_record', 'agg_uuid': agg_uuid},
         dag=monthly_dag
     )
 
     agg_awc_table = BashOperator(
         task_id='agg_awc_table',
         bash_command=run_query_template,
-        params={'query': 'agg_awc_table', 'interval': interval},
+        params={'query': 'agg_awc_table', 'agg_uuid': agg_uuid},
         dag=monthly_dag
     )
 
@@ -115,7 +127,6 @@ def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, inter
         'agg_beneficiary_form',
     ]
 
-
     ls_tasks = SubDagOperator(
         subdag=parallel_subdag(
             MONTHLY_DAG_ID,
@@ -123,7 +134,7 @@ def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, inter
             monthly_dag.default_args,
             monthly_dag.schedule_interval,
             ls_slugs,
-            interval
+            agg_uuid
         ),
         task_id='ls_tasks',
         dag=monthly_dag
@@ -132,7 +143,7 @@ def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, inter
     agg_ls_table = BashOperator(
         task_id='agg_ls_table',
         bash_command=run_query_template,
-        params={'query': 'agg_ls_table', 'interval': interval},
+        params={'query': 'agg_ls_table', 'agg_uuid': agg_uuid},
         dag=monthly_dag
     )
 
@@ -148,5 +159,14 @@ def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, inter
     agg_ccs_record >> agg_awc_table
     agg_awc_table >> ls_tasks
     ls_tasks >> agg_ls_table
+
+    if interval == 0:
+        aggregate_awc_daily = BashOperator(
+            task_id='aggregate_awc_daily',
+            bash_command=run_query_template,
+            params={'query': 'aggregate_awc_daily', 'agg_uuid': agg_uuid},
+            dag=monthly_dag
+        )
+        agg_awc_table >> aggregate_awc_daily
 
     return monthly_dag
