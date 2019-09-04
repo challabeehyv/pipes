@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 
 from airflow import DAG
 from airflow.operators.bash_operator import BashOperator
+from airflow.operators.email_operator import EmailOperator
 from airflow.operators.python_operator import PythonOperator
 from airflow.operators.subdag_operator import SubDagOperator
 from airflow.operators.latest_only_operator import LatestOnlyOperator
@@ -56,4 +57,12 @@ current_month = SubDagOperator(
     dag=dashboard_dag
 )
 
-latest_only >> setup_aggregation >> prev_month >> current_month
+success_email = EmailOperator(
+    task_id='success_email',
+    to='{}@{}'.format('dashboard-aggregation-script', 'dimagi.com'),
+    subject='Aggregation Complete',
+    html_content="""Aggregation has completed for {{ ds }} """,
+    dag=dashboard_dag
+)
+
+latest_only >> setup_aggregation >> prev_month >> current_month >> success_email
