@@ -40,8 +40,15 @@ def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, inter
 
     create_aggregation_record = BashOperator(
         task_id='create_aggregation_record',
-        bash_command="""cd {{ var.value.CCHQ_HOME }}; {{ var.value.CCHQ_HOME }}/python_env-3.6/bin/python {{ var.value.CCHQ_HOME }}/manage.py create_aggregation_record {{ params.query }} {{ params.agg_uuid }} {{ ds }} {{ params.interval }}""",
+        bash_command="""cd {{ var.value.CCHQ_HOME }}; {{ var.value.CCHQ_HOME }}/python_env-3.6/bin/python {{ var.value.CCHQ_HOME }}/manage.py create_aggregation_record {{ params.query }} {{ params.agg_uuid }} {{ tomorrow_ds }} {{ params.interval }}""",
         params={'agg_uuid': agg_uuid, 'interval': interval},
+        dag=monthly_dag
+    )
+
+    setup_aggregation = BashOperator(
+        task_id='setup_aggregation',
+        bash_command=run_query_template,
+        params={'query': 'setup_aggregation', 'agg_uuid': agg_uuid},
         dag=monthly_dag
     )
 
@@ -154,6 +161,7 @@ def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, inter
         dag=monthly_dag
     )
 
+    setup_aggregation >> daily_attendance
     daily_attendance >> stage_1_tasks
     daily_attendance >> update_months_table
     stage_1_tasks >> child_health_monthly
