@@ -147,6 +147,13 @@ def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, agg_d
         dag=monthly_dag
     )
 
+    create_mbt = BashOperator(
+        task_id='create_mbt_for_month',
+        bash_command=run_query_template,
+        params={'query': 'create_mbt_for_month', 'agg_uuid': agg_uuid},
+        dag=monthly_dag
+    )
+
     daily_attendance >> stage_1_tasks
     daily_attendance >> update_months_table
     stage_1_tasks >> child_health_monthly
@@ -159,6 +166,7 @@ def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, agg_d
     agg_ccs_record >> agg_awc_table
     agg_awc_table >> ls_tasks
     ls_tasks >> agg_ls_table
+    agg_awc_table >> create_mbt
 
     if interval == 0:
         aggregate_awc_daily = BashOperator(
