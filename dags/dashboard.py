@@ -24,7 +24,7 @@ DASHBOARD_DAG_ID = 'dashboard_aggregation'
 
 dashboard_dag = DAG(DASHBOARD_DAG_ID, default_args=default_args, schedule_interval='0 18 * * *')
 
-latest_only = LatestOnlyOperator(task_id='latest_only', dag=dag, depends_on_past=True)
+latest_only = LatestOnlyOperator(task_id='latest_only', dag=dashboard_dag, depends_on_past=True)
 
 setup_aggregation = BashOperator(
     task_id='setup_aggregation',
