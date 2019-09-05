@@ -49,7 +49,7 @@ def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, inter
     create_aggregation_record = BashOperator(
         task_id='create_aggregation_record',
         bash_command="""cd {{ var.value.CCHQ_HOME }}; {{ var.value.CCHQ_HOME }}/python_env-3.6/bin/python {{ var.value.CCHQ_HOME }}/manage.py create_aggregation_record {{ params.query }} {{ ti.xcom_pull('get_uuid') }} {{ tomorrow_ds }} {{ params.interval }}""",
-        params={'agg_uuid': agg_uuid, 'interval': interval},
+        params={'interval': interval},
         dag=monthly_dag
     )
 
