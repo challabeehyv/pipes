@@ -53,13 +53,6 @@ def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, inter
         dag=monthly_dag
     )
 
-    setup_aggregation = BashOperator(
-        task_id='setup_aggregation',
-        bash_command=run_query_template,
-        params={'query': 'setup_aggregation'},
-        dag=monthly_dag
-    )
-
     daily_attendance = BashOperator(
         task_id='daily_attendance',
         bash_command=run_query_template,
@@ -167,7 +160,7 @@ def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, inter
         dag=monthly_dag
     )
 
-    get_agg_id >> create_aggregation_record >> setup_aggregation >> daily_attendance
+    get_agg_id >> create_aggregation_record >> daily_attendance
     daily_attendance >> stage_1_tasks
     daily_attendance >> update_months_table
     stage_1_tasks >> child_health_monthly
