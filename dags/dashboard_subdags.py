@@ -8,7 +8,7 @@ from airflow.operators.subdag_operator import SubDagOperator
 run_query_template = """cd {{ var.value.CCHQ_HOME }}; {{ var.value.CCHQ_HOME }}/python_env-3.6/bin/python {{ var.value.CCHQ_HOME }}/manage.py run_aggregation_query {{ params.query }} {{ ti.xcom_pull('get_uuid') }}"""
 
 
-def parallel_subdag(parent_dag, child_dag, default_args, schedule_interval, tasks, agg_uuid):
+def parallel_subdag(parent_dag, child_dag, default_args, schedule_interval, tasks):
 
     parallel_dag = DAG(
         '{}.{}'.format(parent_dag, child_dag),
@@ -20,7 +20,7 @@ def parallel_subdag(parent_dag, child_dag, default_args, schedule_interval, task
         run_task = BashOperator(
             task_id=task_slug,
             bash_command=run_query_template,
-            params={'query': task_slug, 'agg_uuid': agg_uuid},
+            params={'query': task_slug},
             dag=parallel_dag
         )
 
@@ -56,21 +56,21 @@ def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, inter
     setup_aggregation = BashOperator(
         task_id='setup_aggregation',
         bash_command=run_query_template,
-        params={'query': 'setup_aggregation', 'agg_uuid': agg_uuid},
+        params={'query': 'setup_aggregation'},
         dag=monthly_dag
     )
 
     daily_attendance = BashOperator(
         task_id='daily_attendance',
         bash_command=run_query_template,
-        params={'query': 'daily_attendance', 'agg_uuid': agg_uuid},
+        params={'query': 'daily_attendance'},
         dag=monthly_dag
     )
 
     update_months_table = BashOperator(
         task_id='update_months_table',
         bash_command=run_query_template,
-        params={'query': 'update_months_table', 'agg_uuid': agg_uuid},
+        params={'query': 'update_months_table'},
         dag=monthly_dag
     )
 
@@ -94,8 +94,7 @@ def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, inter
             'stage_1_tasks',
             monthly_dag.default_args,
             monthly_dag.schedule_interval,
-            stage_1_slugs,
-            agg_uuid
+            stage_1_slugs
         ),
         task_id='stage_1_tasks',
         dag=monthly_dag
@@ -104,35 +103,35 @@ def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, inter
     child_health_monthly = BashOperator(
         task_id='child_health_monthly',
         bash_command=run_query_template,
-        params={'query': 'child_health_monthly', 'agg_uuid': agg_uuid},
+        params={'query': 'child_health_monthly'},
         dag=monthly_dag
     )
 
     agg_child_health = BashOperator(
         task_id='agg_child_health',
         bash_command=run_query_template,
-        params={'query': 'agg_child_health', 'agg_uuid': agg_uuid},
+        params={'query': 'agg_child_health'},
         dag=monthly_dag
     )
 
     ccs_record_monthly = BashOperator(
         task_id='ccs_record_monthly',
         bash_command=run_query_template,
-        params={'query': 'ccs_record_monthly', 'agg_uuid': agg_uuid},
+        params={'query': 'ccs_record_monthly'},
         dag=monthly_dag
     )
 
     agg_ccs_record = BashOperator(
         task_id='agg_ccs_record',
         bash_command=run_query_template,
-        params={'query': 'agg_ccs_record', 'agg_uuid': agg_uuid},
+        params={'query': 'agg_ccs_record'},
         dag=monthly_dag
     )
 
     agg_awc_table = BashOperator(
         task_id='agg_awc_table',
         bash_command=run_query_template,
-        params={'query': 'agg_awc_table', 'agg_uuid': agg_uuid},
+        params={'query': 'agg_awc_table'},
         dag=monthly_dag
     )
 
@@ -148,8 +147,7 @@ def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, inter
             'ls_tasks',
             monthly_dag.default_args,
             monthly_dag.schedule_interval,
-            ls_slugs,
-            agg_uuid
+            ls_slugs
         ),
         task_id='ls_tasks',
         dag=monthly_dag
@@ -158,14 +156,14 @@ def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, inter
     agg_ls_table = BashOperator(
         task_id='agg_ls_table',
         bash_command=run_query_template,
-        params={'query': 'agg_ls_table', 'agg_uuid': agg_uuid},
+        params={'query': 'agg_ls_table'},
         dag=monthly_dag
     )
 
     create_mbt = BashOperator(
         task_id='create_mbt_for_month',
         bash_command=run_query_template,
-        params={'query': 'create_mbt_for_month', 'agg_uuid': agg_uuid},
+        params={'query': 'create_mbt_for_month'},
         dag=monthly_dag
     )
 
@@ -188,7 +186,7 @@ def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, inter
         aggregate_awc_daily = BashOperator(
             task_id='aggregate_awc_daily',
             bash_command=run_query_template,
-            params={'query': 'aggregate_awc_daily', 'agg_uuid': agg_uuid},
+            params={'query': 'aggregate_awc_daily'},
             dag=monthly_dag
         )
         agg_awc_table >> aggregate_awc_daily
