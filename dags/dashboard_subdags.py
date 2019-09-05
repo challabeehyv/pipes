@@ -161,7 +161,7 @@ def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, inter
         dag=monthly_dag
     )
 
-    setup_aggregation >> daily_attendance
+    create_aggregation_record >> setup_aggregation >> daily_attendance
     daily_attendance >> stage_1_tasks
     daily_attendance >> update_months_table
     stage_1_tasks >> child_health_monthly
