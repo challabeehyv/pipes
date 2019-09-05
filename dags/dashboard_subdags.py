@@ -27,7 +27,7 @@ def parallel_subdag(parent_dag, child_dag, default_args, schedule_interval, task
     return parallel_dag
 
 
-def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, agg_date, interval):
+def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, interval):
 
     agg_uuid = uuid.uuid4().hex
 
