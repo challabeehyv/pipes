@@ -10,6 +10,8 @@ run_query_template = """cd {{ var.value.CCHQ_HOME }}; {{ var.value.CCHQ_HOME }}/
 
 def parallel_subdag(parent_dag, child_dag, default_args, schedule_interval, tasks):
 
+    subdag_query_template = """cd {{ var.value.CCHQ_HOME }}; {{ var.value.CCHQ_HOME }}/python_env-3.6/bin/python {{ var.value.CCHQ_HOME }}/manage.py run_aggregation_query {{ params.query }} {{ ti.xcom_pull(dag_id=params.parent_dag_id, task_ids='get_uuid') }}"""
+
     parallel_dag = DAG(
         '{}.{}'.format(parent_dag, child_dag),
         default_args=default_args,
@@ -19,8 +21,8 @@ def parallel_subdag(parent_dag, child_dag, default_args, schedule_interval, task
     for task_slug in tasks:
         run_task = BashOperator(
             task_id=task_slug,
-            bash_command=run_query_template,
-            params={'query': task_slug},
+            bash_command=subdag_query_template,
+            params={'query': task_slug, 'parent_dag_id': parent_dag},
             dag=parallel_dag
         )
 
