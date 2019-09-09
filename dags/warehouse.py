@@ -23,7 +23,7 @@ default_args = {
 
 WAREHOUSE_DAG_ID = 'update_warehouse'
 
-dag = DAG(WAREHOUSE_DAG_ID, default_args=default_args, schedule_interval='@daily')
+dag = DAG(WAREHOUSE_DAG_ID, default_args=default_args, schedule_interval='30 18 * * *')
 
 latest_only = LatestOnlyOperator(task_id='latest_only', dag=dag, depends_on_past=True)
 

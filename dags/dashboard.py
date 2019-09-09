@@ -7,7 +7,7 @@ from airflow.operators.python_operator import PythonOperator
 from airflow.operators.subdag_operator import SubDagOperator
 from airflow.operators.latest_only_operator import LatestOnlyOperator
 
-from dashboard_subdags import parallel_subdag, monthly_subdag, run_query_template
+from dashboard_subdags import parallel_subdag, monthly_subdag
 
 default_args = {
     'owner': 'cchq',
@@ -24,14 +24,7 @@ DASHBOARD_DAG_ID = 'dashboard_aggregation'
 
 dashboard_dag = DAG(DASHBOARD_DAG_ID, default_args=default_args, schedule_interval='0 18 * * *')
 
-latest_only = LatestOnlyOperator(task_id='latest_only', dag=dag, depends_on_past=True)
-
-setup_aggregation = BashOperator(
-    task_id='setup_aggregation',
-    bash_command=run_query_template,
-    params={'query': 'setup_aggregation'},
-    dag=dashboard_dag
-)
+latest_only = LatestOnlyOperator(task_id='latest_only', dag=dashboard_dag, depends_on_past=True)
 
 prev_month = SubDagOperator(
     subdag=monthly_subdag(
@@ -61,8 +54,8 @@ success_email = EmailOperator(
     task_id='success_email',
     to='{}@{}'.format('dashboard-aggregation-script', 'dimagi.com'),
     subject='Aggregation Complete',
-    html_content="""Aggregation has completed for {{ ds }} """,
+    html_content="""Aggregation has completed for {{ tomorrow_ds }} """,
     dag=dashboard_dag
 )
 
-latest_only >> setup_aggregation >> prev_month >> current_month >> success_email
+latest_only >> prev_month >> current_month >> success_email
