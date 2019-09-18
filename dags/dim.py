@@ -101,6 +101,7 @@ def multi_subdag(parent_dag, child_dag, default_args, schedule_interval, dim_dep
         dims.append(update_dim)
         update_dim.set_upstream(update_staging)
 
+    staging_dependencies = dims if dims else [start_batch]
     staging = []
     if extra_staging is not None:
         for staging_table in extra_staging:
@@ -112,10 +113,11 @@ def multi_subdag(parent_dag, child_dag, default_args, schedule_interval, dim_dep
                 dag=dag
             )
             staging.append(update_staging)
-            for dim in dims:
+            for dim in staging_dependencies:
                 update_staging.set_upstream(dim)
 
     multi_dims = []
+    final_dependencies = staging if staging else staging_dependencies
     for dim in final_dims:
         dim_slug = '{}_{}'.format(dim, final_type)
         update_multi_dim = BashOperator(
@@ -125,9 +127,7 @@ def multi_subdag(parent_dag, child_dag, default_args, schedule_interval, dim_dep
             dag=dag
         )
         multi_dims.append(update_multi_dim)
-        for table in staging:
-            update_multi_dim.set_upstream(table)
-        for dim in dims:
+        for dim in final_dependencies:
             update_multi_dim.set_upstream(dim)
 
     complete_batch = BashOperator(
