@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 
 from airflow import DAG
-from airflow.operators.bash_operator import BashOperator
 from airflow.operators.subdag_operator import SubDagOperator
 from airflow.operators.latest_only_operator import LatestOnlyOperator
 from dim import dim_subdag, multi_subdag, fact_subdag
@@ -33,9 +32,45 @@ update_app_dim = SubDagOperator(
     dag=dag
 )
 
-update_user_dims = SubDagOperator(
-    subdag=multi_subdag(WAREHOUSE_DAG_ID, 'user', dag.default_args, dag.schedule_interval, ['group', 'user', 'location', 'domain'], ['user_group', 'user_location', 'domain_membership'], 'dim'),
+update_user_dim = SubDagOperator(
+    subdag=dim_subdag(WAREHOUSE_DAG_ID, 'user', dag.default_args, dag.schedule_interval),
     task_id='user',
+    dag=dag
+)
+
+update_group_dim = SubDagOperator(
+    subdag=dim_subdag(WAREHOUSE_DAG_ID, 'group', dag.default_args, dag.schedule_interval),
+    task_id='group',
+    dag=dag
+)
+
+update_location_dim = SubDagOperator(
+    subdag=dim_subdag(WAREHOUSE_DAG_ID, 'location', dag.default_args, dag.schedule_interval),
+    task_id='location',
+    dag=dag
+)
+
+update_domain_dim = SubDagOperator(
+    subdag=dim_subdag(WAREHOUSE_DAG_ID, 'domain', dag.default_args, dag.schedule_interval),
+    task_id='domain',
+    dag=dag
+)
+
+update_user_group_dim = SubDagOperator(
+    subdag=dim_subdag(WAREHOUSE_DAG_ID, 'user_group', dag.default_args, dag.schedule_interval),
+    task_id='user_group',
+    dag=dag
+)
+
+update_user_location_dim = SubDagOperator(
+    subdag=dim_subdag(WAREHOUSE_DAG_ID, 'user_location', dag.default_args, dag.schedule_interval),
+    task_id='user_location',
+    dag=dag
+)
+
+update_domain_membership_dim = SubDagOperator(
+    subdag=dim_subdag(WAREHOUSE_DAG_ID, 'domain_membership', dag.default_args, dag.schedule_interval),
+    task_id='domain_membership',
     dag=dag
 )
 
@@ -57,15 +92,40 @@ update_app_status = SubDagOperator(
     dag=dag
 )
 
-latest_only >> update_app_dim
-latest_only >> update_user_dims
-latest_only >> update_app_status
-latest_only >> update_synclog_fact
-latest_only >> update_form_fact
+latest_only >> [
+    update_app_dim,
+    update_user_dim,
+    update_location_dim,
+    update_domain_dim,
+]
 
-update_user_dims >> update_synclog_fact
-update_user_dims >> update_form_fact
+update_user_group_dim << [
+    update_user_dim,
+    update_group_dim
+]
 
-update_app_dim >> update_app_status
-update_synclog_fact >> update_app_status
-update_form_fact >> update_app_status
+update_user_location_dim << [
+    update_user_dim,
+    update_location_dim
+]
+
+update_form_fact << [
+    update_user_dim,
+    update_domain_dim
+]
+
+update_synclog_fact << [
+    update_domain_dim,
+    update_user_dim,
+]
+
+update_domain_membership_dim << [
+    update_user_dim,
+    update_domain_dim
+]
+
+update_app_status << [
+    update_app_dim,
+    update_synclog_fact,
+    update_form_fact,
+]
