@@ -39,8 +39,20 @@ update_user_dims = SubDagOperator(
     dag=dag
 )
 
+update_synclog_fact = SubDagOperator(
+    subdag=fact_subdag(WAREHOUSE_DAG_ID, 'synclog', dag.default_args, dag.schedule_interval),
+    task_id='synclog',
+    dag=dag
+)
+
+update_form_fact = SubDagOperator(
+    subdag=fact_subdag(WAREHOUSE_DAG_ID, 'form', dag.default_args, dag.schedule_interval),
+    task_id='form',
+    dag=dag
+)
+
 update_app_status = SubDagOperator(
-    subdag=multi_subdag(WAREHOUSE_DAG_ID, 'app_status', dag.default_args, dag.schedule_interval, ['form', 'synclog'], ['app_status'], 'fact', extra_staging=['app_status_form', 'app_status_synclog']),
+    subdag=multi_subdag(WAREHOUSE_DAG_ID, 'app_status', dag.default_args, dag.schedule_interval, [], ['app_status'], 'fact', extra_staging=['app_status_form', 'app_status_synclog']),
     task_id='app_status',
     dag=dag
 )
@@ -48,6 +60,12 @@ update_app_status = SubDagOperator(
 latest_only >> update_app_dim
 latest_only >> update_user_dims
 latest_only >> update_app_status
+latest_only >> update_synclog_fact
+latest_only >> update_form_fact
 
-update_user_dims >> update_app_status
+update_user_dims >> update_synclog_fact
+update_user_dims >> update_form_fact
+
 update_app_dim >> update_app_status
+update_synclog_fact >> update_app_status
+update_form_fact >> update_app_status
