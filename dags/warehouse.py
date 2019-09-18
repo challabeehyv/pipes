@@ -95,6 +95,7 @@ update_app_status = SubDagOperator(
 latest_only >> [
     update_app_dim,
     update_user_dim,
+    update_group_dim,
     update_location_dim,
     update_domain_dim,
 ]
