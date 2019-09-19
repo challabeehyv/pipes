@@ -2,7 +2,7 @@ from airflow import DAG
 from airflow.operators import BashOperator
 
 
-commit_table_template = """{{ var.value.CCHQ_HOME }}/python_env-3.6/bin/python {{ var.value.CCHQ_HOME }}/manage.py commit_table {{ params.table_slug }} {{ ti.xcom_pull(params.start_id) }}"""
+commit_table_template = """{{ var.value.CCHQ_PY_ENV }}/bin/python {{ var.value.CCHQ_HOME }}/manage.py commit_table {{ params.table_slug }} {{ ti.xcom_pull(params.start_id) }}"""
 
 
 def linear_subdag(parent_dag, child_dag, default_args, schedule_interval, final_type):
@@ -19,7 +19,7 @@ def linear_subdag(parent_dag, child_dag, default_args, schedule_interval, final_
 
     start_batch = BashOperator(
         task_id=start_id,
-        bash_command="{{ var.value.CCHQ_HOME }}/python_env-3.6/bin/python {{ var.value.CCHQ_HOME }}/manage.py create_batch {{ params.table_slug }} '{{ next_execution_date.strftime('%Y-%m-%d %H:%M:%S') }}'",
+        bash_command="{{ var.value.CCHQ_PY_ENV }}/bin/python {{ var.value.CCHQ_HOME }}/manage.py create_batch {{ params.table_slug }} '{{ next_execution_date.strftime('%Y-%m-%d %H:%M:%S') }}'",
         params={'table_slug': final_slug},
         dag=dag,
         xcom_push=True
@@ -42,7 +42,7 @@ def linear_subdag(parent_dag, child_dag, default_args, schedule_interval, final_
 
     complete_batch = BashOperator(
         task_id='complete_batch',
-        bash_command="{{ var.value.CCHQ_HOME }}/python_env-3.6/bin/python {{ var.value.CCHQ_HOME }}/manage.py mark_batch_complete {{ ti.xcom_pull(params.start_id) }}",
+        bash_command="{{ var.value.CCHQ_PY_ENV }}/bin/python {{ var.value.CCHQ_HOME }}/manage.py mark_batch_complete {{ ti.xcom_pull(params.start_id) }}",
         params={'start_id': start_id},
         dag=dag
     )
@@ -73,7 +73,7 @@ def multi_subdag(parent_dag, child_dag, default_args, schedule_interval, dim_dep
 
     start_batch = BashOperator(
         task_id=start_id,
-        bash_command="{{ var.value.CCHQ_HOME }}/python_env-3.6/bin/python {{ var.value.CCHQ_HOME }}/manage.py create_batch {{ params.batch_slug }} '{{ next_execution_date.strftime('%Y-%m-%d %H:%M:%S') }}'",
+        bash_command="{{ var.value.CCHQ_PY_ENV }}/bin/python {{ var.value.CCHQ_HOME }}/manage.py create_batch {{ params.batch_slug }} '{{ next_execution_date.strftime('%Y-%m-%d %H:%M:%S') }}'",
         params={'batch_slug': batch_slug},
         dag=dag,
         xcom_push=True
@@ -132,7 +132,7 @@ def multi_subdag(parent_dag, child_dag, default_args, schedule_interval, dim_dep
 
     complete_batch = BashOperator(
         task_id='complete_batch',
-        bash_command="{{ var.value.CCHQ_HOME }}/python_env-3.6/bin/python {{ var.value.CCHQ_HOME }}/manage.py mark_batch_complete {{ ti.xcom_pull(params.start_id) }}",
+        bash_command="{{ var.value.CCHQ_PY_ENV }}/bin/python {{ var.value.CCHQ_HOME }}/manage.py mark_batch_complete {{ ti.xcom_pull(params.start_id) }}",
         params={'start_id': start_id},
         dag=dag
     )

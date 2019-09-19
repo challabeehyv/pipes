@@ -5,12 +5,12 @@ from airflow.operators import BashOperator, PythonOperator
 from airflow.operators.subdag_operator import SubDagOperator
 
 
-run_query_template = """cd {{ var.value.CCHQ_HOME }}; {{ var.value.CCHQ_HOME }}/python_env-3.6/bin/python {{ var.value.CCHQ_HOME }}/manage.py run_aggregation_query {{ params.query }} {{ ti.xcom_pull('get_uuid') }}"""
+run_query_template = """cd {{ var.value.CCHQ_HOME }}; {{ var.value.CCHQ_PY_ENV }}/bin/python {{ var.value.CCHQ_HOME }}/manage.py run_aggregation_query {{ params.query }} {{ ti.xcom_pull('get_uuid') }}"""
 
 
 def parallel_subdag(parent_dag, child_dag, default_args, schedule_interval, tasks):
 
-    subdag_query_template = """cd {{ var.value.CCHQ_HOME }}; {{ var.value.CCHQ_HOME }}/python_env-3.6/bin/python {{ var.value.CCHQ_HOME }}/manage.py run_aggregation_query {{ params.query }} {{ ti.xcom_pull(dag_id=params.parent_dag_id, task_ids='get_uuid') }}"""
+    subdag_query_template = """cd {{ var.value.CCHQ_HOME }}; {{ var.value.CCHQ_PY_ENV }}/bin/python {{ var.value.CCHQ_HOME }}/manage.py run_aggregation_query {{ params.query }} {{ ti.xcom_pull(dag_id=params.parent_dag_id, task_ids='get_uuid') }}"""
 
     parallel_dag = DAG(
         '{}.{}'.format(parent_dag, child_dag),
@@ -50,7 +50,7 @@ def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, inter
 
     create_aggregation_record = BashOperator(
         task_id='create_aggregation_record',
-        bash_command="""cd {{ var.value.CCHQ_HOME }}; {{ var.value.CCHQ_HOME }}/python_env-3.6/bin/python {{ var.value.CCHQ_HOME }}/manage.py create_aggregation_record {{ params.query }} {{ ti.xcom_pull('get_uuid') }} {{ tomorrow_ds }} {{ params.interval }}""",
+        bash_command="""cd {{ var.value.CCHQ_HOME }}; {{ var.value.CCHQ_PY_ENV }}/bin/python {{ var.value.CCHQ_HOME }}/manage.py create_aggregation_record {{ params.query }} {{ ti.xcom_pull('get_uuid') }} {{ tomorrow_ds }} {{ params.interval }}""",
         params={'interval': interval},
         dag=monthly_dag
     )
