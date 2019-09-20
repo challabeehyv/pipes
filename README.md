@@ -58,7 +58,7 @@ The `-d` flag runs it in debug mode. It is not clear why, but that is the only w
 If your local copy gets messed up and you would like to start from a clean slate (somewhat likely during the development process), you can use the following command
 
 ```
-airflow resetdb && airflow airflow variables --set CCHQ_HOME /path/to/cchq
+airflow resetdb && airflow variables --set CCHQ_HOME /path/to/cchq && airflow variables --set CCHQ_PY_ENV /path/to/cchq/python_env
 ```
 
 It might be useful to create an alias for this. If you need to reset airflow state completely it is might also be necessary to delete batches from your hq `Batch` model that correspond to the dag you are trying to reset.
