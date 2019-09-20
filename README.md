@@ -20,12 +20,6 @@ Symlink dags to expected location
 ln -s dags ~/airflow/dags
 ```
 
-Symlink your hq virtualenv into your hq repo in a directory named `python_env` (same location as on production servers)
-
-```
-ln -s /path/to/virtualenv /path/to/cchq/python_env
-```
-
 create airflow dbs
 
 ```
@@ -35,7 +29,8 @@ airflow initdb
 set airflow environment variables
 
 ```
-airflow variables --set CCHQ_HOME /path/to/cchq
+airflow variables --set CCHQ_HOME <path to cchq>
+airflow variables --set CCHQ_PY_ENV <path to cchq python env>
 ```
 
 # How to run
