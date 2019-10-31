@@ -180,6 +180,7 @@ def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, inter
     child_health_monthly >> agg_child_health
     ccs_record_monthly >> agg_ccs_record
     agg_child_health >> agg_awc_table
+    update_child_health_monthly_table >> agg_awc_table
     agg_ccs_record >> agg_awc_table
     agg_awc_table >> ls_tasks
     ls_tasks >> agg_ls_table
