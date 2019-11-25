@@ -71,7 +71,6 @@ def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, inter
 
     stage_1_slugs = [
         'aggregate_gm_forms',
-        'aggregate_df_forms',
         'aggregate_cf_forms',
         'aggregate_ccs_cf_forms',
         'aggregate_child_health_thr_forms',
@@ -92,6 +91,13 @@ def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, inter
             stage_1_slugs
         ),
         task_id='stage_1_tasks',
+        dag=monthly_dag
+    )
+
+    df_forms = BashOperator(
+        task_id='aggregate_df_forms',
+        bash_command=run_query_template,
+        params={'query': 'aggregate_df_forms'},
         dag=monthly_dag
     )
 
@@ -172,8 +178,10 @@ def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, inter
     get_agg_id >> create_aggregation_record >> daily_attendance
     daily_attendance >> stage_1_tasks
     daily_attendance >> update_months_table
+    daily_attendance >> df_forms
     stage_1_tasks >> child_health_monthly
     stage_1_tasks >> ccs_record_monthly
+    df_forms >> child_health_monthly
     update_months_table >> child_health_monthly
     update_months_table >> ccs_record_monthly
     child_health_monthly >> update_child_health_monthly_table
