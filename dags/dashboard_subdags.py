@@ -193,5 +193,7 @@ def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, inter
             dag=monthly_dag
         )
         agg_awc_table >> create_mbt
+        update_child_health_monthly_table >> create_mbt
+        ccs_record_monthly >> create_mbt
 
     return monthly_dag
