@@ -109,10 +109,17 @@ def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, inter
         dag=monthly_dag
     )
 
-    agg_child_health = BashOperator(
-        task_id='agg_child_health',
+    agg_child_health_temp = BashOperator(
+        task_id='agg_child_health_temp',
         bash_command=run_query_template,
-        params={'query': 'agg_child_health'},
+        params={'query': 'agg_child_health_temp'},
+        dag=monthly_dag
+    )
+
+    update_agg_child_health = BashOperator(
+        task_id='update_agg_child_health',
+        bash_command=run_query_template,
+        params={'query': 'update_agg_child_health'},
         dag=monthly_dag
     )
 
@@ -170,9 +177,10 @@ def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, inter
     update_months_table >> child_health_monthly
     update_months_table >> ccs_record_monthly
     child_health_monthly >> update_child_health_monthly_table
-    child_health_monthly >> agg_child_health
+    child_health_monthly >> agg_child_health_temp
     ccs_record_monthly >> agg_ccs_record
-    agg_child_health >> agg_awc_table
+    agg_child_health_temp >> update_agg_child_health
+    agg_child_health_temp >> agg_awc_table
     child_health_monthly >> agg_awc_table
     agg_ccs_record >> agg_awc_table
     agg_awc_table >> ls_tasks
