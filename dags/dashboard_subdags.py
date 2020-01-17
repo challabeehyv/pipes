@@ -81,7 +81,8 @@ def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, inter
         'aggregate_delivery_forms',
         'aggregate_bp_forms',
         'aggregate_awc_infra_forms',
-        'aggregate_ag_forms'
+        'aggregate_ag_forms',
+        'agg_gov_vhnd_form'
     ]
 
     stage_1_tasks = SubDagOperator(
