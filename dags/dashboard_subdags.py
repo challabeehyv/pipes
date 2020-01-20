@@ -201,8 +201,16 @@ def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, inter
             params={'query': 'create_mbt_for_month'},
             dag=monthly_dag
         )
+        governance_dashboard = BashOperator(
+            task_id='update_governance_dashboard',
+            bash_command=run_query_template,
+            params={'query': 'update_governance_dashboard'},
+            dag=monthly_dag
+        )
         aggregate_awc_daily >> create_mbt
         update_child_health_monthly_table >> create_mbt
         agg_ls_table >> create_mbt
+
+        create_mbt >> governance_dashboard
 
     return monthly_dag
