@@ -55,10 +55,10 @@ def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, inter
         dag=monthly_dag
     )
 
-    _update_aggregate_locations_tables = BashOperator(
-        task_id='_update_aggregate_locations_tables',
+    update_aggregate_locations_tables = BashOperator(
+        task_id='update_aggregate_locations_tables',
         bash_command=run_query_template,
-        params={'query': '_update_aggregate_locations_tables'},
+        params={'query': 'update_aggregate_locations_tables'},
         dag=monthly_dag
     )
 
@@ -179,7 +179,7 @@ def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, inter
 
     get_agg_id >> create_aggregation_record >> daily_attendance
     # Running awc_location build step in parallel to other steps
-    create_aggregation_record >> _update_aggregate_locations_tables
+    create_aggregation_record >> update_aggregate_locations_tables
 
     daily_attendance >> stage_1_tasks
     daily_attendance >> update_months_table
@@ -191,8 +191,8 @@ def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, inter
 
     # making the agg_child_health_temp and agg_ccs_record dependent on awc_location step
     # as further steps uses awc_location table
-    _update_aggregate_locations_tables >> agg_child_health_temp
-    _update_aggregate_locations_tables >> agg_ccs_record
+    update_aggregate_locations_tables >> agg_child_health_temp
+    update_aggregate_locations_tables >> agg_ccs_record
 
     child_health_monthly >> agg_child_health_temp
     ccs_record_monthly >> agg_ccs_record
