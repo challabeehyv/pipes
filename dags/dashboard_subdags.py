@@ -191,10 +191,11 @@ def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, inter
     agg_child_health_temp >> agg_awc_table
     child_health_monthly >> agg_awc_table
     agg_ccs_record >> agg_awc_table
+    agg_child_health_temp >> update_service_delivery_report
+    child_health_monthly >> update_service_delivery_report
+    agg_ccs_record >> update_service_delivery_report
     agg_awc_table >> ls_tasks
-    agg_awc_table >> update_service_delivery_report
     ls_tasks >> agg_ls_table
-    update_service_delivery_report >> agg_ls_table
 
     if interval == 0:
         aggregate_awc_daily = BashOperator(
