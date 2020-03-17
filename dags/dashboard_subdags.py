@@ -57,8 +57,7 @@ def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, inter
 
     update_aggregate_locations_tables = BashOperator(
         task_id='update_aggregate_locations_tables',
-        bash_command=run_query_template,
-        params={'query': 'update_aggregate_locations_tables'},
+        bash_command= """cd {{ var.value.CCHQ_HOME }}; {{ var.value.CCHQ_PY_ENV }}/bin/python {{ var.value.CCHQ_HOME }}/manage.py update_location_tables {{ ti.xcom_pull('get_uuid') }}""",
         dag=monthly_dag
     )
 
