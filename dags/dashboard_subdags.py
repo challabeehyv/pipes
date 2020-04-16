@@ -55,6 +55,12 @@ def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, inter
         dag=monthly_dag
     )
 
+    update_aggregate_locations_tables = BashOperator(
+        task_id='update_aggregate_locations_tables',
+        bash_command= """cd {{ var.value.CCHQ_HOME }}; {{ var.value.CCHQ_PY_ENV }}/bin/python {{ var.value.CCHQ_HOME }}/manage.py update_location_tables {{ ti.xcom_pull('get_uuid') }}""",
+        dag=monthly_dag
+    )
+
     daily_attendance = BashOperator(
         task_id='daily_attendance',
         bash_command=run_query_template,
@@ -81,7 +87,8 @@ def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, inter
         'aggregate_delivery_forms',
         'aggregate_bp_forms',
         'aggregate_awc_infra_forms',
-        'aggregate_ag_forms'
+        'aggregate_ag_forms',
+        'aggregate_migration_forms'
     ]
 
     stage_1_tasks = SubDagOperator(
@@ -145,6 +152,13 @@ def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, inter
         dag=monthly_dag
     )
 
+    update_service_delivery_report = BashOperator(
+        task_id='update_service_delivery_report',
+        bash_command=run_query_template,
+        params={'query': 'update_service_delivery_report'},
+        dag=monthly_dag
+    )
+
     ls_slugs = [
         'agg_ls_awc_mgt_form',
         'agg_ls_vhnd_form',
@@ -171,6 +185,9 @@ def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, inter
     )
 
     get_agg_id >> create_aggregation_record >> daily_attendance
+    # Running awc_location build step in parallel to other steps
+    create_aggregation_record >> update_aggregate_locations_tables
+
     daily_attendance >> stage_1_tasks
     daily_attendance >> update_months_table
     stage_1_tasks >> child_health_monthly
@@ -178,12 +195,20 @@ def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, inter
     update_months_table >> child_health_monthly
     update_months_table >> ccs_record_monthly
     child_health_monthly >> update_child_health_monthly_table
+
+    # making the agg_child_health_temp and agg_ccs_record dependent on awc_location step
+    # as further steps uses awc_location table
+    update_aggregate_locations_tables >> agg_child_health_temp
+    update_aggregate_locations_tables >> agg_ccs_record
+
     child_health_monthly >> agg_child_health_temp
     ccs_record_monthly >> agg_ccs_record
     agg_child_health_temp >> update_agg_child_health
     agg_child_health_temp >> agg_awc_table
     child_health_monthly >> agg_awc_table
     agg_ccs_record >> agg_awc_table
+    agg_child_health_temp >> update_service_delivery_report
+    agg_ccs_record >> update_service_delivery_report
     agg_awc_table >> ls_tasks
     ls_tasks >> agg_ls_table
 
@@ -201,8 +226,16 @@ def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, inter
             params={'query': 'create_mbt_for_month'},
             dag=monthly_dag
         )
+        governance_dashboard = BashOperator(
+            task_id='update_governance_dashboard',
+            bash_command=run_query_template,
+            params={'query': 'update_governance_dashboard'},
+            dag=monthly_dag
+        )
         aggregate_awc_daily >> create_mbt
         update_child_health_monthly_table >> create_mbt
         agg_ls_table >> create_mbt
+
+        create_mbt >> governance_dashboard
 
     return monthly_dag
