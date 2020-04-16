@@ -159,6 +159,13 @@ def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, inter
         dag=monthly_dag
     )
 
+    update_child_vaccine_table = BashOperator(
+        task_id='update_child_vaccine_table',
+        bash_command=run_query_template,
+        params={'query': 'update_child_vaccine_table'},
+        dag=monthly_dag
+    )
+
     ls_slugs = [
         'agg_ls_awc_mgt_form',
         'agg_ls_vhnd_form',
@@ -211,6 +218,7 @@ def monthly_subdag(parent_dag, child_dag, default_args, schedule_interval, inter
     agg_ccs_record >> update_service_delivery_report
     agg_awc_table >> ls_tasks
     ls_tasks >> agg_ls_table
+    update_child_health_monthly_table >> update_child_vaccine_table
 
     if interval == 0:
         aggregate_awc_daily = BashOperator(
